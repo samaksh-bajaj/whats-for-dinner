@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+@theme {
+  /* Ground & surfaces — warm oat, yellow cast (besan), never grey-cream */
+  --color-ground: #f6efdf;
+  --color-surface: #fffbf1;
+  --color-sunk: #ede3cd;
+
+  /* Ink — deep roast brown, warm; we never use true black */
+  --color-ink: #2b2119;
+  --color-ink-soft: #73624f;
+  --color-ink-faint: #a39177;
+
+  /* Spice accents */
+  --color-paprika: #be3a22;
+  --color-paprika-deep: #94290f;
+  --color-olive: #5a6b38;
+  --color-olive-deep: #3f4c26;
+  --color-turmeric: #dda01b;
+
+  --color-line: #e2d6be;
+  --color-line-soft: #eee5d2;
+
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --radius-card: 14px;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  background: var(--color-ground);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  /* Avoid the double-tap-zoom delay and rubber-banding on iOS */
+  touch-action: manipulation;
+  overscroll-behavior-y: none;
+}
+
+/* Fraunces reads flat at its defaults; the wonk + soft axes are the point. */
+.font-display {
+  font-variation-settings: "SOFT" 40, "WONK" 1;
+  letter-spacing: -0.015em;
+}
+
+/* Tabular figures wherever numbers sit in a column and must line up. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Keyboard focus stays visible everywhere; pointer focus does not draw a ring. */
+:focus-visible {
+  outline: 2px solid var(--color-paprika);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
