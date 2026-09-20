@@ -93,7 +93,7 @@ one starts.
 6. ✅ Dishes + rating gate
 7. ✅ Scoring module + vitest
 8. ✅ Voting: start, vote, end
-9. ⬜ Dashboard: calendar + karma
+9. ✅ Dashboard: calendar + karma
 10. ⬜ Deploy + polish
 
 @AGENTS.md
