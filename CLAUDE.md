@@ -91,7 +91,7 @@ one starts.
 4. ✅ Auth: magic link, `proxy.ts`, `/login`, `/auth/callback`
 5. ✅ Household create / join
 6. ✅ Dishes + rating gate
-7. ⬜ Scoring module + vitest
+7. ✅ Scoring module + vitest
 8. ⬜ Voting: start, vote, end
 9. ⬜ Dashboard: calendar + karma
 10. ⬜ Deploy + polish
