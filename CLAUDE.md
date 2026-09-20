@@ -94,6 +94,7 @@ one starts.
 7. ✅ Scoring module + vitest
 8. ✅ Voting: start, vote, end
 9. ✅ Dashboard: calendar + karma
-10. ⬜ Deploy + polish
+10. ◐ Deploy + polish — polish done, pushed to a private GitHub repo;
+    the Vercel import needs your account
 
 @AGENTS.md
