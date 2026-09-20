@@ -49,3 +49,11 @@ export async function requireHousehold() {
   if (!viewer.household) redirect("/welcome");
   return { user: viewer.user, household: viewer.household };
 }
+
+/** For the welcome screens: anyone already settled belongs in the app. */
+export async function requireNoHousehold() {
+  const viewer = await getViewer();
+  if (!viewer) redirect("/login");
+  if (viewer.household) redirect("/tonight");
+  return viewer.user;
+}

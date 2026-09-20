@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { ChefHat, DoorOpen } from "lucide-react";
+import { requireNoHousehold } from "@/lib/household";
 
-export default function WelcomePage() {
+export default async function WelcomePage() {
+  await requireNoHousehold();
+
   return (
     <>
       <h1 className="font-display text-[40px] leading-[1.05] font-semibold text-ink">

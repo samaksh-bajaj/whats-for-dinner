@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { JoinHouseholdForm } from "./join-form";
+import { requireNoHousehold } from "@/lib/household";
 
-export default function JoinHouseholdPage() {
+export default async function JoinHouseholdPage() {
+  await requireNoHousehold();
+
   return (
     <>
       <Link
