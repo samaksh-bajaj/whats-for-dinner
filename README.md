@@ -9,7 +9,8 @@ ground to people who keep losing — picks the winner. Cooked dishes log to a
 calendar and feed back into recency and sampling.
 
 **Stack:** Next.js 16 (App Router, TypeScript) · Supabase (Postgres, Auth, RLS,
-Realtime) · Tailwind v4 · lucide-react · deployed on Vercel.
+Realtime) · Tailwind v4 · lucide-react · deployed on Vercel at
+[whatsfordinner.online](https://whatsfordinner.online).
 
 ## Running it locally
 

@@ -15,9 +15,23 @@ const figtree = Figtree({
   display: "swap",
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
+  // Without a base, every relative URL in metadata resolves against localhost
+  // once this is deployed — shared links would point at nothing.
+  metadataBase: new URL(siteUrl),
   title: "What's for Dinner?",
   description: "Your household decides together, one vote a night.",
+  applicationName: "What's for Dinner?",
+  // Phone-first, so it should behave when someone adds it to their home screen.
+  appleWebApp: { capable: true, title: "Dinner", statusBarStyle: "default" },
+  openGraph: {
+    title: "What's for Dinner?",
+    description: "Your household decides together, one vote a night.",
+    url: siteUrl,
+    type: "website",
+  },
 };
 
 export const viewport: Viewport = {
