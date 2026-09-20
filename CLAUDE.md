@@ -88,7 +88,8 @@ one starts.
 1. ✅ Scaffold, design tokens, AppShell
 2. ✅ Register the Supabase MCP server
 3. ✅ Schema + RLS (one migration, mirrored to `supabase/migrations/`)
-4. ⬜ Auth: magic link, `proxy.ts`, `/login`, `/auth/callback`
+4. ◐ Auth: magic link, `proxy.ts`, `/login`, `/auth/callback` — code in,
+   waiting on Resend SMTP + redirect URLs before a link round-trip proves it
 5. ⬜ Household create / join
 6. ⬜ Dishes + rating gate
 7. ⬜ Scoring module + vitest
