@@ -6,10 +6,14 @@
   --color-surface: #fffbf1;
   --color-sunk: #ede3cd;
 
-  /* Ink — deep roast brown, warm; we never use true black */
+  /* Ink — deep roast brown, warm; we never use true black.
+     The two lighter tones are as light as they can be and still clear WCAG AA
+     (4.5:1) for body text on ground and surface: ink-soft 7.19, ink-faint
+     4.53. They carry real content — notes, hints, "still deciding" — not
+     decoration, so they have to be readable rather than merely tasteful. */
   --color-ink: #2b2119;
-  --color-ink-soft: #73624f;
-  --color-ink-faint: #a39177;
+  --color-ink-soft: #5c4c39;
+  --color-ink-faint: #7d6a50;
 
   /* Spice accents */
   --color-paprika: #be3a22;

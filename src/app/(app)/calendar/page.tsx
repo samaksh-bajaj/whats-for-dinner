@@ -79,7 +79,9 @@ export default async function CalendarPage(props: PageProps<"/calendar">) {
 
             const cell = (
               <>
-                <span className="tnum text-[13px]">{dayOfMonth(date)}</span>
+                <time dateTime={date} className="tnum text-[13px]">
+                  {dayOfMonth(date)}
+                </time>
                 {/* A dot, not a name: at seven columns on a phone there is no
                     room for "Bhindi and roti". Tapping the day says the rest. */}
                 <span
@@ -111,13 +113,21 @@ export default async function CalendarPage(props: PageProps<"/calendar">) {
                 {cell}
               </Link>
             ) : (
-              <div key={date} className={classes} aria-label={date}>
+              <div key={date} className={classes}>
                 {cell}
               </div>
             );
           })}
         </div>
       </section>
+
+      {cooked.size === 0 && (
+        <p className="mt-5 text-[15px] leading-relaxed text-ink-soft">
+          Nothing cooked in {monthLabel(month)} yet. Every round you finish
+          lands here, and what you ate lately is what the sampler tries to
+          avoid repeating.
+        </p>
+      )}
 
       {selected && (
         <section className="mt-6 rounded-card border border-line bg-surface p-5">

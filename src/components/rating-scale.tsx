@@ -34,6 +34,7 @@ export function RatingScale({
             type="submit"
             name="value"
             value={value}
+            aria-label={label}
             aria-pressed={chosen}
             className={cn(
               "flex flex-1 flex-col items-center gap-1.5 rounded-xl border px-1 py-3 transition-colors",

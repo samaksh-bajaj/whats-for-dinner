@@ -121,6 +121,7 @@ export function Ballot({
             <button
               key={choice}
               type="button"
+              aria-label={label}
               aria-pressed={picked}
               onClick={() => {
                 setChoices((current) => ({ ...current, [dish.id]: choice }));
