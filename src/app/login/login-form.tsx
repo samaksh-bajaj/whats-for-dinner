@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { ArrowLeft, LoaderCircle, MailCheck, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { sendMagicLink, type MagicLinkState } from "@/lib/auth-actions";
@@ -87,12 +88,12 @@ export function LoginForm({
 
 export function BackToStart() {
   return (
-    <a
+    <Link
       href="/"
       className="inline-flex items-center gap-1.5 text-[14px] text-ink-faint hover:text-ink-soft"
     >
       <ArrowLeft size={15} aria-hidden />
       Back
-    </a>
+    </Link>
   );
 }

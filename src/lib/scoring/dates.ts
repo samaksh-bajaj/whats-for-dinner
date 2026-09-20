@@ -19,3 +19,20 @@ export function daysBetween(from: string, to: string): number {
 export function daysSince(lastCookedOn: string | null, today: string): number | null {
   return lastCookedOn === null ? null : daysBetween(lastCookedOn, today);
 }
+
+/**
+ * The calendar day it is *for this household*. A round belongs to the day its
+ * kitchen is having, not the day the server is having — the only reason the
+ * household stores a timezone at all.
+ */
+export function todayIn(timeZone: string, now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+
+  const part = (type: string) => parts.find((p) => p.type === type)!.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}

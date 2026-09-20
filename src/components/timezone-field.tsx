@@ -1,28 +1,34 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useSyncExternalStore } from "react";
+
+const noop = () => () => {};
+
+/**
+ * True only once the browser has taken over. The server and the browser can
+ * ship different ICU data, and a mismatched <option> list is a hydration
+ * error, so the full list is rendered client-side.
+ */
+function useHydrated() {
+  return useSyncExternalStore(
+    noop,
+    () => true,
+    () => false,
+  );
+}
 
 /**
  * Which calendar day a round belongs to, and nothing else — so the phone's own
- * zone is almost always right. The list is built after mount: server and
- * browser can carry different ICU data, and a mismatched <option> list is a
- * hydration error for a field nobody will touch.
+ * zone is almost always right. The select is uncontrolled: the `key` flip on
+ * hydration re-mounts it with the detected zone as its default, and whatever
+ * the person picks after that is simply what the form submits.
  */
 export function TimezoneField({ id = "timezone" }: { id?: string }) {
-  const [zone, setZone] = useState("UTC");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (detected) setZone(detected);
-    setMounted(true);
-  }, []);
-
-  const zones = useMemo(() => {
-    if (!mounted) return [zone];
-    const all = Intl.supportedValuesOf?.("timeZone") ?? [];
-    return all.includes(zone) ? all : [zone, ...all];
-  }, [mounted, zone]);
+  const hydrated = useHydrated();
+  const detected = hydrated
+    ? (Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC")
+    : "UTC";
+  const zones = hydrated ? (Intl.supportedValuesOf?.("timeZone") ?? [detected]) : [detected];
 
   return (
     <div>
@@ -30,10 +36,10 @@ export function TimezoneField({ id = "timezone" }: { id?: string }) {
         Timezone
       </label>
       <select
+        key={hydrated ? "browser" : "server"}
         id={id}
         name="timezone"
-        value={zone}
-        onChange={(event) => setZone(event.target.value)}
+        defaultValue={detected}
         className="mt-2 h-[52px] w-full rounded-xl border border-line bg-surface px-4 text-[17px] text-ink focus:border-paprika focus:outline-none"
       >
         {zones.map((name) => (

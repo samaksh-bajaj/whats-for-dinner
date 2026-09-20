@@ -92,7 +92,7 @@ one starts.
 5. ✅ Household create / join
 6. ✅ Dishes + rating gate
 7. ✅ Scoring module + vitest
-8. ⬜ Voting: start, vote, end
+8. ✅ Voting: start, vote, end
 9. ⬜ Dashboard: calendar + karma
 10. ⬜ Deploy + polish
 
