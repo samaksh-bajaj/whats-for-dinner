@@ -192,27 +192,34 @@ teaches the app anyone's taste in the first place. Nothing else feeds it.
 
 ## Deployment
 
-The product is **What's Cooking?**; the domain is still
-`whatsfordinner.online`. Renamed 2026-09-21 without moving the domain, which
-was deliberate — the four places the origin is written down have to move
-together (see below), and Resend's verification and Supabase's URL config are
-both pinned to it. The name appears in `layout.tsx` metadata, the landing hero,
-the login title and `global-error.tsx`, and nowhere near a URL.
-
-Live at **https://whatsfordinner.online** — Vercel, deploying automatically
-on every push to `main`. Verified in production on 2026-09-21: HTTPS with HSTS,
-and the proxy gating `/tonight`, `/dishes`, `/household` and `/calendar` to
-`/login` with `next` intact.
+Live at **https://whatscookingapp.net** — Vercel, deploying automatically on
+every push to `main`. Moved here from `whatsfordinner.online` on 2026-09-21,
+the same day the product was renamed; the old domain stays on the project as a
+redirect, so don't delete it.
 
 - **The apex is canonical**; `www` 308-redirects to it, keeping path and query.
-  `NEXT_PUBLIC_SITE_URL`, `og:url` and Supabase's site URL all agree on
-  `https://whatsfordinner.online`. Settled 2026-09-21 — if it ever moves, all
-  four have to move together, and the env var is baked in at build time so it
-  needs a redeploy.
+- **The origin is written down in four places and they move together**:
+  `NEXT_PUBLIC_SITE_URL` in Vercel, Supabase's Site URL, Supabase's redirect
+  allow-list, and DNS. `og:url` and the magic-link origin are not a fifth and
+  sixth — both derive from the env var, at `layout.tsx:18` and
+  `auth-actions.ts:17`. The var is `NEXT_PUBLIC_*`, so it is inlined at build
+  time: changing it in Vercel does nothing until something redeploys.
+- **Allow-list before you switch.** Add the new origin to Supabase's redirect
+  list *before* pointing `NEXT_PUBLIC_SITE_URL` at it. The other order makes
+  `signInWithOtp` send an `emailRedirectTo` Supabase won't honour, and it
+  falls back to the Site URL silently rather than erroring.
+- **A domain move breaks magic links that are already in flight**, and
+  redirecting the old origin does not rescue them: the PKCE verifier is a
+  cookie on the origin that served the login form, so a link that lands
+  somewhere else arrives without its half of the pair and reads as expired.
+  Links last an hour. Move when nobody is mid-login.
 - Supabase → Authentication → URL Configuration must keep both the production
   origin and `http://localhost:3000/**`, or local dev breaks.
-- Resend is verified on the domain: magic links reach arbitrary addresses, not
-  just the Resend account owner's.
+- Resend is verified on `whatscookingapp.net`, and Supabase's SMTP sender uses
+  it: magic links reach arbitrary addresses, not just the Resend account
+  owner's.
+- **There is no SEO to migrate.** `robots.ts` disallows everything and there is
+  no sitemap, so a future move needs no Search Console change-of-address.
 
 ## State of the data
 

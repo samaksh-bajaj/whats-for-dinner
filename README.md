@@ -12,7 +12,7 @@ sampling.
 
 **Stack:** Next.js 16 (App Router, TypeScript) · Supabase (Postgres, Auth, RLS,
 Realtime) · Tailwind v4 · lucide-react · deployed on Vercel at
-[whatsfordinner.online](https://whatsfordinner.online).
+[whatscookingapp.net](https://whatscookingapp.net).
 
 ## Running it locally
 
