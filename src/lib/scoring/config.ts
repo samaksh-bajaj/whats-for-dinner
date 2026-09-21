@@ -33,9 +33,9 @@ export const RECENCY_PENALTY_BEYOND = 0;
 export const KARMA_ON_LOSS = 1.0;
 export const KARMA_ON_WIN = -0.75;
 /**
- * NOTE: the plan describes this as a ~14-day half-life, but 0.905^7 = 0.497 —
- * it is really a ~7-day half-life, and 0.905^14 = 0.247. The constant is kept
- * as specified; change it to 0.9513 if a genuine fortnight was meant.
+ * A ~7-day half-life: 0.905^7 = 0.497. The original plan called this a
+ * fortnight, which was simply wrong arithmetic; a week is what was wanted and
+ * what this is. (0.9513 would be a genuine fortnight, if that ever changes.)
  */
 export const KARMA_DECAY_PER_DAY = 0.905;
 export const KARMA_MIN = -3;

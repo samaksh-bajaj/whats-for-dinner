@@ -324,7 +324,7 @@ describe("jitter", () => {
 });
 
 describe("karma over time", () => {
-  it("halves in about a week, not a fortnight as the plan's note claims", () => {
+  it("halves in about a week, which is the intended half-life", () => {
     expect(KARMA_DECAY_PER_DAY ** 7).toBeCloseTo(0.5, 2);
     expect(KARMA_DECAY_PER_DAY ** 14).toBeCloseTo(0.25, 2);
   });
