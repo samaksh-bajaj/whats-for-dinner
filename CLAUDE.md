@@ -168,12 +168,11 @@ on every push to `main`. Verified in production on 2026-09-21: HTTPS with HSTS,
 and the proxy gating `/tonight`, `/dishes`, `/household` and `/calendar` to
 `/login` with `next` intact.
 
-- **www is the canonical host**; the apex 308-redirects to it. But
-  `NEXT_PUBLIC_SITE_URL` is set to the *apex*, so magic links and `og:url` are
-  generated for `whatsfordinner.online` and then bounce to `www`. It works —
-  a 308 keeps the path and query — but the two disagree. Worth settling by
-  either pointing the env var at `www` (then redeploy, since it is baked in at
-  build time) or making the apex canonical in Vercel.
+- **The apex is canonical**; `www` 308-redirects to it, keeping path and query.
+  `NEXT_PUBLIC_SITE_URL`, `og:url` and Supabase's site URL all agree on
+  `https://whatsfordinner.online`. Settled 2026-09-21 — if it ever moves, all
+  four have to move together, and the env var is baked in at build time so it
+  needs a redeploy.
 - Supabase → Authentication → URL Configuration must keep both the production
   origin and `http://localhost:3000/**`, or local dev breaks.
 - Resend is verified on the domain: magic links reach arbitrary addresses, not
@@ -194,8 +193,6 @@ branch through the MCP server (`create_branch`) for anything needing a second
 person or backfilled history, and update this section.
 
 ## Open decisions
-- **Canonical host.** `NEXT_PUBLIC_SITE_URL` points at the apex while the site
-  serves from `www`. Harmless today, but it should agree with itself.
 - There is no way to change a household password once it is set.
 - `household_members` has a delete policy so a member can leave, but no UI for
   it, and nothing transfers leadership if the leader goes.
