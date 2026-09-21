@@ -21,7 +21,7 @@ export default function GlobalError({ reset }: { reset: () => void }) {
         }}
       >
         <h1 style={{ fontSize: 30, fontWeight: 600, margin: 0 }}>
-          What&rsquo;s for Dinner is down
+          What&rsquo;s Cooking is down
         </h1>
         <p style={{ fontSize: 16, lineHeight: 1.6, color: "#5c4c39" }}>
           Something broke badly enough to take the whole page with it. Reloading

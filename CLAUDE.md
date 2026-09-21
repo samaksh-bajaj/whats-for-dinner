@@ -1,4 +1,4 @@
-# What's for Dinner?
+# What's Cooking?
 
 A mobile-first web app that settles a household's nightly dinner decision.
 Nobody fills in a preference form. Any member starts the evening's
@@ -37,6 +37,9 @@ src/lib/supabase/             browser + server clients, realtime auth, types
 src/proxy.ts                  session refresh (Next 16's rename of middleware)
 src/app/(app)/                the four tabs, behind a household check
 src/app/(onboarding)/         welcome / create / join
+public/mark.svg               the brand mark, as supplied
+src/app/icon.svg              tab icon — the mark on a ground tile, generated
+src/app/apple-icon.png        180px home-screen icon, same tile, generated
 supabase/migrations/          mirrored from MCP
 ```
 
@@ -126,7 +129,12 @@ teaches the app anyone's taste in the first place. Nothing else feeds it.
 - **Next 16 renamed Middleware to Proxy.** Session refresh goes in `proxy.ts`
   at the `src/` root, not `middleware.ts`. Check
   `node_modules/next/dist/docs/` before reaching for older App Router habits.
-- **No emojis in the UI, ever.** Icons come from `lucide-react`.
+- **No emojis in the UI, ever.** Icons come from `lucide-react`. The one
+  illustration is the brand mark (`public/mark.svg`), and it appears in exactly
+  two places: the landing hero at 150px and the login header at 48px. Its
+  detail turns to mush below about 40px, so it is not an icon — reach for
+  lucide instead. It is decorative wherever the name is already in the markup,
+  so both uses carry `alt=""`.
 - Design tokens live in `src/app/globals.css` under `@theme`. Use the semantic
   names (`bg-ground`, `text-ink-soft`, `border-line`), never raw hex.
 - `ink-soft` and `ink-faint` are tuned to clear WCAG AA (7.19 and 4.53 against
@@ -183,6 +191,13 @@ teaches the app anyone's taste in the first place. Nothing else feeds it.
   a stale compiled route. Restart `next dev`.
 
 ## Deployment
+
+The product is **What's Cooking?**; the domain is still
+`whatsfordinner.online`. Renamed 2026-09-21 without moving the domain, which
+was deliberate — the four places the origin is written down have to move
+together (see below), and Resend's verification and Supabase's URL config are
+both pinned to it. The name appears in `layout.tsx` metadata, the landing hero,
+the login title and `global-error.tsx`, and nowhere near a URL.
 
 Live at **https://whatsfordinner.online** — Vercel, deploying automatically
 on every push to `main`. Verified in production on 2026-09-21: HTTPS with HSTS,

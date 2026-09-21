@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 // A week of a fictional household's ledger — the thing the app actually
@@ -12,19 +13,33 @@ const sampleWeek = [
 
 export default function Landing() {
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[440px] flex-col px-6 pt-[max(3.5rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
-      <h1 className="font-display text-[54px] leading-[0.95] font-semibold text-ink">
-        What&rsquo;s for
+    <main className="mx-auto flex min-h-dvh w-full max-w-[440px] flex-col px-6 pt-[max(3rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
+      {/* Mark over wordmark: the pan rests bottom-left and its handle exits
+          top-right, so the mark's own composition already reads as a column
+          and the name continues it. Set on one line the name needs 341px and
+          overflows anything narrower than a 390px phone, so it stays broken
+          across two — which is also the hero scale the app started with. */}
+      <Image
+        src="/mark.svg"
+        alt=""
+        width={1841}
+        height={1680}
+        priority
+        className="h-auto w-[150px]"
+      />
+
+      <h1 className="mt-6 font-display text-[54px] leading-[0.95] font-semibold text-ink">
+        What&rsquo;s
         <br />
-        dinner?
+        Cooking?
       </h1>
 
       <p className="mt-6 max-w-[34ch] text-[17px] leading-relaxed text-ink-soft">
-        Your household asks it every single evening. Settle it together in under
-        a minute &mdash; everyone votes, nobody negotiates.
+        Six dishes go up, everyone votes, and dinner is settled in under a
+        minute. Nobody negotiates, and nobody loses every night.
       </p>
 
-      <div className="mt-12 border-t border-line">
+      <div className="mt-10 border-t border-line">
         {sampleWeek.map(({ day, dish }) => (
           <div
             key={day}

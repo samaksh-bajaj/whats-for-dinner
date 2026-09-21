@@ -1,4 +1,4 @@
-# What's for Dinner?
+# What's Cooking?
 
 A mobile-first web app that settles a household's nightly dinner decision.
 

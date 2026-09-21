@@ -21,13 +21,13 @@ export const metadata: Metadata = {
   // Without a base, every relative URL in metadata resolves against localhost
   // once this is deployed — shared links would point at nothing.
   metadataBase: new URL(siteUrl),
-  title: "What's for Dinner?",
+  title: "What's Cooking?",
   description: "Your household decides together, one vote a night.",
-  applicationName: "What's for Dinner?",
+  applicationName: "What's Cooking?",
   // Phone-first, so it should behave when someone adds it to their home screen.
-  appleWebApp: { capable: true, title: "Dinner", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Cooking", statusBarStyle: "default" },
   openGraph: {
-    title: "What's for Dinner?",
+    title: "What's Cooking?",
     description: "Your household decides together, one vote a night.",
     url: siteUrl,
     type: "website",
