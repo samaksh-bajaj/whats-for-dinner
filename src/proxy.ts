@@ -64,9 +64,11 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Everything except Next's own assets and static files — the proxy has to
-     * see normal page requests to refresh a session, and nothing else.
+     * Everything except Next's own assets, static files, and the metadata
+     * routes crawlers ask for by name. The proxy has to see normal page
+     * requests to refresh a session, and nothing else — robots.txt in
+     * particular must not be answered with a redirect to the login page.
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
   ],
 };
