@@ -163,26 +163,38 @@ random. Under 6 active dishes, show them all — this is the day-one path.
 
 ## Deployment
 
-- Private GitHub repo: `samaksh-bajaj/whats-for-dinner`.
-- Domain **whatsfordinner.online** is owned; the Vercel import was still
-  pending as of 2026-09-21.
-- Vercel needs `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and
-  `NEXT_PUBLIC_SITE_URL`. The last is baked in at build time, so changing it
-  needs a redeploy.
-- Supabase → Authentication → URL Configuration must list both the production
-  origin and `http://localhost:3000/**`, or magic links come back rejected.
-- Resend sends the magic links. Until its domain is verified it can only
-  deliver to the Resend account's own address, which is what blocks inviting a
-  second person. A sending address needs no mailbox behind it.
+Live at **https://www.whatsfordinner.online** — Vercel, deploying automatically
+on every push to `main`. Verified in production on 2026-09-21: HTTPS with HSTS,
+and the proxy gating `/tonight`, `/dishes`, `/household` and `/calendar` to
+`/login` with `next` intact.
+
+- **www is the canonical host**; the apex 308-redirects to it. But
+  `NEXT_PUBLIC_SITE_URL` is set to the *apex*, so magic links and `og:url` are
+  generated for `whatsfordinner.online` and then bounce to `www`. It works —
+  a 308 keeps the path and query — but the two disagree. Worth settling by
+  either pointing the env var at `www` (then redeploy, since it is baked in at
+  build time) or making the apex canonical in Vercel.
+- Supabase → Authentication → URL Configuration must keep both the production
+  origin and `http://localhost:3000/**`, or local dev breaks.
+- Resend is verified on the domain: magic links reach arbitrary addresses, not
+  just the Resend account owner's.
 
 ## State of the data
 
-Wiped clean on 2026-09-21 at the owner's request: no auth users, no households,
-no dishes. Schema, RLS policies, helpers and triggers are all intact. A fresh
-sign-in creates a profile named from the email's local part and lands on
-`/welcome`.
+**This is live data now.** As of 2026-09-21 the Supabase project holds one real
+household in daily use by three people, with nine dishes and two rounds of
+history. It is not a sandbox.
+
+So: do not wipe tables, and do not insert stand-in members or fixture rounds
+into the real household the way the build sessions did — that history feeds
+recency, sampling and karma, and fake rows quietly corrupt everyone's dinners.
+For anything needing two people or a fortnight of fixtures, create a Supabase
+branch through the MCP server (`create_branch`) and test against that, or make
+a second household and put throwaway accounts in it.
 
 ## Open decisions
+- **Canonical host.** `NEXT_PUBLIC_SITE_URL` points at the apex while the site
+  serves from `www`. Harmless today, but it should agree with itself.
 - There is no way to change a household password once it is set.
 - `household_members` has a delete policy so a member can leave, but no UI for
   it, and nothing transfers leadership if the leader goes.
