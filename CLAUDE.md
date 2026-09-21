@@ -181,16 +181,17 @@ and the proxy gating `/tonight`, `/dishes`, `/household` and `/calendar` to
 
 ## State of the data
 
-**This is live data now.** As of 2026-09-21 the Supabase project holds one real
-household in daily use by three people, with nine dishes and two rounds of
-history. It is not a sandbox.
+Still the testing phase. As of 2026-09-21 the Supabase project holds one
+household with three accounts in it, nine dishes and two rounds — all of it the
+owner's own test accounts, not other people's dinners. Wiping and reseeding is
+fair game while that stays true, and the owner has asked for a clean slate
+before.
 
-So: do not wipe tables, and do not insert stand-in members or fixture rounds
-into the real household the way the build sessions did — that history feeds
-recency, sampling and karma, and fake rows quietly corrupt everyone's dinners.
-For anything needing two people or a fortnight of fixtures, create a Supabase
-branch through the MCP server (`create_branch`) and test against that, or make
-a second household and put throwaway accounts in it.
+It will stop being true. Once real housemates are in, fixture rounds and
+stand-in members stop being harmless: that history feeds recency, sampling and
+karma, so fake rows would skew real dinners. At that point use a Supabase
+branch through the MCP server (`create_branch`) for anything needing a second
+person or backfilled history, and update this section.
 
 ## Open decisions
 - **Canonical host.** `NEXT_PUBLIC_SITE_URL` points at the apex while the site
