@@ -7,16 +7,42 @@ formula that weights the least-happy member heavily — plus karma that gives
 ground to people who keep losing — picks the winner. Cooked dishes log to a
 calendar and feed back into recency and sampling.
 
-Full plan: `~/.claude/plans/i-m-making-a-website-prancy-creek.md`
+The original build plan (all ten steps done) is at
+`~/.claude/plans/i-m-making-a-website-prancy-creek.md`. It is history, not a
+roadmap — new work does not need to follow it.
 
 ## Stack
 
 Next.js 16 (App Router, TypeScript) · Supabase (Postgres, Auth, RLS, Realtime)
-· Tailwind v4 · lucide-react · deployed on Vercel.
+· Tailwind v4 · lucide-react · Vercel · vitest.
 
 Supabase schema work goes through the **Supabase MCP server** (`.mcp.json`,
 hosted HTTP + OAuth). Migrations are applied with `apply_migration` and
-mirrored into `supabase/migrations/` so the schema lives in git.
+mirrored into `supabase/migrations/` so the schema lives in git. Note that
+`execute_sql` returns only the **last** statement's result — a multi-statement
+query silently hides the earlier ones.
+
+## Where things live
+
+```
+src/lib/scoring/config.ts     every tunable constant, and nowhere else
+src/lib/scoring/*.ts          sample, score, karma, dates, random — pure, tested
+src/lib/rounds.ts             startRound / closeRound
+src/lib/history.ts            calendar, karma board, dish stats
+src/lib/dishes.ts             the repertoire and the rating gate
+src/lib/household.ts          getViewer / requireHousehold / requireNoHousehold
+src/lib/*-actions.ts          server actions, one file per area
+src/lib/supabase/             browser + server clients, realtime auth, types
+src/proxy.ts                  session refresh (Next 16's rename of middleware)
+src/app/(app)/                the four tabs, behind a household check
+src/app/(onboarding)/         welcome / create / join, and the rating gate
+supabase/migrations/          one migration, mirrored from MCP
+```
+
+Route groups do the gating, not the proxy: `(app)` sends anyone without a
+household to `/welcome`; `(onboarding)` requires a session and each page
+asserts its own precondition. The proxy only refreshes the session — it has no
+business making a database round-trip on every request.
 
 ## Product rules
 
@@ -45,6 +71,7 @@ PER-MEMBER SCORE (voters only)
   m = baseline_rating(-2..+2) + tonight_vote
   tonight: Yum +2 | Meh 0 | Yuck -3
   unrated dish -> baseline 0
+  a voter who skipped one dish abstains on it; no opinion is invented
 
 DISH SCORE
   2*min(m) + mean(m) - recency + karma + jitter
@@ -54,12 +81,19 @@ RECENCY (days since last cooked)
 
 KARMA (per member, after each round)
   top-voted dish lost -> +1.0 ; won -> -0.75
-  decay *= 0.905 per day (~14d half-life), clamp [-3, +3]
+  decay *= 0.905 per day, clamp [-3, +3]
+  someone who disliked everything still has a top choice: whatever they
+  disliked least
   dish karma term = 0.5 * mean(karma of voters who said Yum tonight)
 
 JITTER uniform(-0.15, +0.15), seeded on (round_id, dish_id) — deterministic
 TIEBREAK higher min -> older last_cooked -> stable random
 ```
+
+Determinism is a design constraint, not an accident: jitter and the final
+tiebreak are both seeded on `(round, dish)`, so scoring the same round twice
+cannot produce two different winners. Otherwise "End voting" would be a coin
+flip anyone could re-roll by refreshing.
 
 **Sampling**, 6 dishes frozen at round start: 3 highest household baseline not
 cooked in 7 days, 2 with the fewest lifetime votes, 1 wildcard not cooked in 15
@@ -74,27 +108,88 @@ random. Under 6 active dishes, show them all — this is the day-one path.
 - **No emojis in the UI, ever.** Icons come from `lucide-react`.
 - Design tokens live in `src/app/globals.css` under `@theme`. Use the semantic
   names (`bg-ground`, `text-ink-soft`, `border-line`), never raw hex.
+- `ink-soft` and `ink-faint` are tuned to clear WCAG AA (7.19 and 4.53 against
+  ground). They carry real content, not decoration — check contrast before
+  lightening either.
 - Fraunces is the display face and carries dish names; the `.font-display`
   class also engages its `SOFT` and `WONK` axes, which is the whole point of
   choosing it. Figtree handles UI text.
 - Single light theme by design. No dark mode.
 - Phone-first: 440px cap, bottom tab bar, safe-area insets on all edges.
+- Icon-only or icon-plus-span buttons need an explicit `aria-label`; the
+  accessible name does not reliably compute from a nested span.
 
-## Commits
+## Things that will bite you
 
-Each commit does one meaningful thing and is verified working before the next
-one starts.
+- **This Supabase project grants nothing by default.** RLS policies alone still
+  leave every query with "permission denied", while every new table is handed
+  TRUNCATE/TRIGGER/REFERENCES for `anon`. A new table needs the same treatment
+  as the others: revoke everything, then grant the narrowest thing that works.
+- **`SECURITY DEFINER` functions in `public` become `/rest/v1/rpc/` endpoints.**
+  RLS helpers therefore live in the `private` schema, which PostgREST does not
+  expose. Only `create_household` and `join_household` are meant to be callable.
+- **Realtime joins happily as `anon` and then receives nothing.** The browser
+  client loads its session lazily, so call `authorizeRealtime()` from
+  `src/lib/supabase/realtime.ts` before any `.subscribe()`. A dead channel
+  looks exactly like a quiet one.
+- **RLS filters, it does not refuse.** An update you are not allowed to make
+  succeeds against zero rows. Read the row count if you need to tell someone
+  "that isn't yours" — see `updateDish`.
+- **React 19 resets a form once its action settles.** Anything worth keeping
+  after a failure has to come back out of the action as a default value. Never
+  the password.
+- **`households` has column-level grants**, so `select("*")` fails on it —
+  `password_hash` is readable by nobody. List the columns.
+- **Dates are calendar days in the household's timezone**, compared as
+  `YYYY-MM-DD` strings. Never build a `Date` from local time; a round scored at
+  11pm in Kolkata must not decide it happened tomorrow.
 
-1. ✅ Scaffold, design tokens, AppShell
-2. ✅ Register the Supabase MCP server
-3. ✅ Schema + RLS (one migration, mirrored to `supabase/migrations/`)
-4. ✅ Auth: magic link, `proxy.ts`, `/login`, `/auth/callback`
-5. ✅ Household create / join
-6. ✅ Dishes + rating gate
-7. ✅ Scoring module + vitest
-8. ✅ Voting: start, vote, end
-9. ✅ Dashboard: calendar + karma
-10. ◐ Deploy + polish — polish done, pushed to a private GitHub repo;
-    the Vercel import needs your account
+## Testing
+
+- `npm test` — vitest over the scoring module and the calendar maths (35 tests).
+- `npm run lint` — **run it before committing.** It catches React hooks rules
+  that `npm run build` does not.
+- `npm run build` — type-checks as well as compiles.
+- For anything involving two people, create a stand-in member with SQL through
+  the MCP server (insert into `auth.users`, then `household_members`,
+  `member_karma`, `dish_ratings`) and drive the other side from the browser.
+  Delete the stand-in afterwards; the cascade cleans up.
+- Driving Chrome: click by element `ref` from `read_page`. Coordinate clicks
+  frequently miss on the first attempt after a navigation. Chrome also throttles
+  background tabs, so a second tab will not visibly update until focused — that
+  is the browser, not the code.
+- If a page renders like an older version of itself, the dev server is serving
+  a stale compiled route. Restart `next dev`.
+
+## Deployment
+
+- Private GitHub repo: `samaksh-bajaj/whats-for-dinner`.
+- Domain **whatsfordinner.online** is owned; the Vercel import was still
+  pending as of 2026-09-21.
+- Vercel needs `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and
+  `NEXT_PUBLIC_SITE_URL`. The last is baked in at build time, so changing it
+  needs a redeploy.
+- Supabase → Authentication → URL Configuration must list both the production
+  origin and `http://localhost:3000/**`, or magic links come back rejected.
+- Resend sends the magic links. Until its domain is verified it can only
+  deliver to the Resend account's own address, which is what blocks inviting a
+  second person. A sending address needs no mailbox behind it.
+
+## State of the data
+
+Wiped clean on 2026-09-21 at the owner's request: no auth users, no households,
+no dishes. Schema, RLS policies, helpers and triggers are all intact. A fresh
+sign-in creates a profile named from the email's local part and lands on
+`/welcome`.
+
+## Open decisions
+
+- **Karma decay.** The plan calls 0.905/day a ~14-day half-life, but
+  `0.905^7 = 0.497` — it is really a ~7-day half-life. The constant is kept as
+  specified and `config.ts` documents what it actually does; `0.9513` would
+  make it a genuine fortnight. Left unresolved on purpose.
+- There is no way to change a household password once it is set.
+- `household_members` has a delete policy so a member can leave, but no UI for
+  it, and nothing transfers leadership if the leader goes.
 
 @AGENTS.md
