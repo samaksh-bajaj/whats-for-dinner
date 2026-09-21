@@ -193,6 +193,11 @@ branch through the MCP server (`create_branch`) for anything needing a second
 person or backfilled history, and update this section.
 
 ## Open decisions
+
+- **Karma decay.** The plan calls 0.905/day a ~14-day half-life, but
+  `0.905^7 = 0.497` — it is really a ~7-day half-life. The constant is kept as
+  specified and `config.ts` documents what it actually does; `0.9513` would
+  make it a genuine fortnight. Left unresolved on purpose.
 - There is no way to change a household password once it is set.
 - `household_members` has a delete policy so a member can leave, but no UI for
   it, and nothing transfers leadership if the leader goes.
