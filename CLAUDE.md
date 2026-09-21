@@ -163,7 +163,7 @@ random. Under 6 active dishes, show them all — this is the day-one path.
 
 ## Deployment
 
-Live at **https://www.whatsfordinner.online** — Vercel, deploying automatically
+Live at **https://whatsfordinner.online** — Vercel, deploying automatically
 on every push to `main`. Verified in production on 2026-09-21: HTTPS with HSTS,
 and the proxy gating `/tonight`, `/dishes`, `/household` and `/calendar` to
 `/login` with `next` intact.
