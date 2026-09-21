@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { CalendarCheck, UtensilsCrossed } from "lucide-react";
 import { requireHousehold } from "@/lib/household";
-import { listActiveDishes, unratedDishes } from "@/lib/dishes";
+import { listActiveDishes } from "@/lib/dishes";
 import { getRound, householdToday } from "@/lib/rounds";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { VoteChoice } from "@/lib/scoring/config";
@@ -14,13 +13,9 @@ import { StartRoundButton } from "./start-round-button";
 
 export default async function TonightPage() {
   const { user, household } = await requireHousehold();
-  const [dishes, unrated] = await Promise.all([
-    listActiveDishes(),
-    unratedDishes(user.id),
-  ]);
-
-  // The hard gate: no voting while you still owe the list an opinion.
-  if (unrated.length > 0) redirect("/rate");
+  // Nothing stands between a member and the ballot. Taste is learned from the
+  // votes themselves, so someone who joined an hour ago votes tonight.
+  const dishes = await listActiveDishes();
 
   const supabase = await createSupabaseServerClient();
   const today = householdToday(household);

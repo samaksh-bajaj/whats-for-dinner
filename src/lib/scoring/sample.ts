@@ -5,8 +5,8 @@ import { seededRandom, seededUnit } from "./random";
 export type SampleDish = {
   id: string;
   lastCookedOn: string | null;
-  /** The household's mean baseline rating for this dish. */
-  baseline: number;
+  /** The household's mean learned taste for this dish. */
+  taste: number;
   /** How many votes it has ever received, across all rounds. */
   lifetimeVotes: number;
 };
@@ -27,6 +27,11 @@ function restedFor(dish: SampleDish, today: string, days: number) {
  * that cannot be filled relaxes its "not cooked in N days" rule and, failing
  * that, takes whatever is left — day one has no history at all, so the
  * fallbacks are the normal path, not the exception.
+ *
+ * With every taste at zero the favourite slot falls through to fewest votes
+ * and then the coin, which is how a household with no history bootstraps one:
+ * the exploration slots keep putting unfamiliar dishes in front of people, and
+ * voting on them is what teaches the app their taste in the first place.
  *
  * With fewer than six active dishes this naturally returns all of them.
  */
@@ -52,11 +57,11 @@ export function sampleDishes({
 
   const rank: Record<SlotType, (a: SampleDish, b: SampleDish) => number> = {
     // Liked, and among equals the one that has been asked about least.
-    high_baseline: (a, b) =>
-      b.baseline - a.baseline || a.lifetimeVotes - b.lifetimeVotes || coin(a) - coin(b),
+    favourite: (a, b) =>
+      b.taste - a.taste || a.lifetimeVotes - b.lifetimeVotes || coin(a) - coin(b),
     // The whole point is the dishes nobody has weighed in on yet.
     exploration: (a, b) =>
-      a.lifetimeVotes - b.lifetimeVotes || b.baseline - a.baseline || coin(a) - coin(b),
+      a.lifetimeVotes - b.lifetimeVotes || b.taste - a.taste || coin(a) - coin(b),
     // No merit involved.
     wildcard: (a, b) => coin(a) - coin(b),
   };

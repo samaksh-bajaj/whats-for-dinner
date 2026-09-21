@@ -103,27 +103,26 @@ export type DishStat = {
   id: string;
   name: string;
   timesCooked: number;
-  baseline: number | null;
   lastCookedOn: string | null;
 };
 
+/**
+ * Times cooked and when, per dish. Deliberately no taste figure: what the
+ * household collectively thinks of a dish is an input to the formula, not a
+ * scoreboard, and publishing it invites people to play the number rather than
+ * say what they actually want. Your own taste is yours to see, on /dishes.
+ */
 export async function dishStats(): Promise<DishStat[]> {
   const supabase = await createSupabaseServerClient();
 
-  const [{ data: dishes }, { data: ratings }, { data: rounds }] = await Promise.all([
+  const [{ data: dishes }, { data: rounds }] = await Promise.all([
     supabase.from("dishes").select("id, name").is("archived_at", null).order("name"),
-    supabase.from("dish_ratings").select("dish_id, value"),
     supabase
       .from("rounds")
       .select("round_date, winner_dish_id")
       .eq("status", "closed")
       .not("winner_dish_id", "is", null),
   ]);
-
-  const byDish = new Map<string, number[]>();
-  for (const rating of ratings ?? []) {
-    byDish.set(rating.dish_id, [...(byDish.get(rating.dish_id) ?? []), rating.value]);
-  }
 
   const cooked = new Map<string, { count: number; last: string }>();
   for (const round of rounds ?? []) {
@@ -138,14 +137,10 @@ export async function dishStats(): Promise<DishStat[]> {
 
   return (dishes ?? [])
     .map((dish) => {
-      const values = byDish.get(dish.id) ?? [];
       return {
         id: dish.id,
         name: dish.name,
         timesCooked: cooked.get(dish.id)?.count ?? 0,
-        baseline: values.length
-          ? values.reduce((total, value) => total + value, 0) / values.length
-          : null,
         lastCookedOn: cooked.get(dish.id)?.last ?? null,
       };
     })

@@ -4,8 +4,8 @@ import type { ReactNode } from "react";
 
 /**
  * The bare shell: full-bleed screens with no tab bar, for the steps that come
- * before (or interrupt) the app proper. Each page decides what it requires —
- * /welcome wants someone without a household, /rate wants someone with one.
+ * before the app proper. Each page decides what it requires — /welcome and
+ * /join want someone without a household, and say so themselves.
  */
 export default async function OnboardingLayout({
   children,

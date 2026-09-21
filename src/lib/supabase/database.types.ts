@@ -18,35 +18,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      dish_ratings: {
-        Row: {
-          dish_id: string
-          updated_at: string
-          user_id: string
-          value: number
-        }
-        Insert: {
-          dish_id: string
-          updated_at?: string
-          user_id: string
-          value: number
-        }
-        Update: {
-          dish_id?: string
-          updated_at?: string
-          user_id?: string
-          value?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "dish_ratings_dish_id_fkey"
-            columns: ["dish_id"]
-            isOneToOne: false
-            referencedRelation: "dishes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       dishes: {
         Row: {
           archived_at: string | null
@@ -339,7 +310,7 @@ export type Database = {
     }
     Enums: {
       round_status: "open" | "closed"
-      slot_type: "high_baseline" | "exploration" | "wildcard"
+      slot_type: "favourite" | "exploration" | "wildcard"
       vote_choice: "yum" | "meh" | "yuck"
     }
     CompositeTypes: {
@@ -469,7 +440,7 @@ export const Constants = {
   public: {
     Enums: {
       round_status: ["open", "closed"],
-      slot_type: ["high_baseline", "exploration", "wildcard"],
+      slot_type: ["favourite", "exploration", "wildcard"],
       vote_choice: ["yum", "meh", "yuck"],
     },
   },

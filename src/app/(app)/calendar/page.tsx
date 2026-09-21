@@ -218,10 +218,6 @@ export default async function CalendarPage(props: PageProps<"/calendar">) {
                 </span>
               </div>
               <p className="mt-0.5 text-[13px] text-ink-faint">
-                {dish.baseline === null
-                  ? "unrated"
-                  : `household rating ${dish.baseline > 0 ? "+" : ""}${dish.baseline.toFixed(1)}`}
-                {" · "}
                 {relativeDay(dish.lastCookedOn, today)}
               </p>
             </li>

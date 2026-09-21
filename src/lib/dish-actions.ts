@@ -39,7 +39,6 @@ export async function addDish(
   }
 
   revalidatePath("/dishes");
-  revalidatePath("/rate");
   return null;
 }
 
@@ -89,27 +88,5 @@ export async function archiveDish(formData: FormData) {
     .eq("id", id);
 
   revalidatePath("/dishes");
-  revalidatePath("/rate");
   redirect("/dishes");
-}
-
-/**
- * One upsert per tap. The five-point scale is the whole vocabulary, so the
- * value is validated against it rather than trusted.
- */
-export async function rateDish(formData: FormData) {
-  const { user } = await requireHousehold();
-  const dishId = String(formData.get("dish_id") ?? "");
-  const value = Number(formData.get("value"));
-
-  if (!Number.isInteger(value) || value < -2 || value > 2) return;
-
-  const supabase = await createSupabaseServerClient();
-  await supabase
-    .from("dish_ratings")
-    .upsert({ dish_id: dishId, user_id: user.id, value });
-
-  revalidatePath("/rate");
-  revalidatePath("/dishes");
-  revalidatePath("/tonight");
 }

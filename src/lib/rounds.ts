@@ -1,6 +1,8 @@
 import { decayed, karmaAfterRound, type Vote } from "@/lib/scoring/karma";
 import { sampleDishes, type SampleDish } from "@/lib/scoring/sample";
-import { scoreRound, type Rating } from "@/lib/scoring/score";
+import { scoreRound } from "@/lib/scoring/score";
+import { householdTasteByDish, learnTaste } from "@/lib/scoring/taste";
+import { tasteObservations } from "@/lib/taste";
 import { todayIn } from "@/lib/scoring/dates";
 import { requireHousehold, type Household } from "@/lib/household";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -37,12 +39,12 @@ export async function getRound(householdId: string, date: string) {
  * thousands — so it is cheaper to fetch and fold in TypeScript than to teach
  * Postgres half the formula.
  */
-async function gatherFacts() {
+async function gatherFacts(today: string) {
   const supabase = await createSupabaseServerClient();
 
-  const [dishes, ratings, closedRounds, votes] = await Promise.all([
+  const [dishes, history, closedRounds, votes] = await Promise.all([
     supabase.from("dishes").select("id, name").is("archived_at", null),
-    supabase.from("dish_ratings").select("dish_id, user_id, value"),
+    tasteObservations(),
     supabase
       .from("rounds")
       .select("round_date, winner_dish_id")
@@ -66,33 +68,20 @@ async function gatherFacts() {
     lifetimeVotes.set(vote.dish_id, (lifetimeVotes.get(vote.dish_id) ?? 0) + 1);
   }
 
-  const ratingsByDish = new Map<string, number[]>();
-  for (const rating of ratings.data ?? []) {
-    ratingsByDish.set(rating.dish_id, [
-      ...(ratingsByDish.get(rating.dish_id) ?? []),
-      rating.value,
-    ]);
-  }
+  // One fold, two consumers: the scorer wants it per member, the sampler wants
+  // the household's average. A dish nobody has voted on is absent from both,
+  // which reads as zero at either end.
+  const tastes = learnTaste(history, today);
+  const tasteByDish = householdTasteByDish(tastes);
 
-  const sampleDishList: SampleDish[] = (dishes.data ?? []).map((dish) => {
-    const values = ratingsByDish.get(dish.id) ?? [];
-    return {
-      id: dish.id,
-      lastCookedOn: lastCookedOn.get(dish.id) ?? null,
-      baseline: values.length
-        ? values.reduce((total, value) => total + value, 0) / values.length
-        : 0,
-      lifetimeVotes: lifetimeVotes.get(dish.id) ?? 0,
-    };
-  });
-
-  const allRatings: Rating[] = (ratings.data ?? []).map((rating) => ({
-    memberId: rating.user_id,
-    dishId: rating.dish_id,
-    value: rating.value,
+  const sampleDishList: SampleDish[] = (dishes.data ?? []).map((dish) => ({
+    id: dish.id,
+    lastCookedOn: lastCookedOn.get(dish.id) ?? null,
+    taste: tasteByDish.get(dish.id) ?? 0,
+    lifetimeVotes: lifetimeVotes.get(dish.id) ?? 0,
   }));
 
-  return { dishes: sampleDishList, ratings: allRatings, lastCookedOn };
+  return { dishes: sampleDishList, tastes, lastCookedOn };
 }
 
 export type RoundOutcome = { error: string } | { roundId: string };
@@ -109,7 +98,7 @@ export async function startRound(): Promise<RoundOutcome> {
   const already = await getRound(household.id, today);
   if (already) return { roundId: already.id };
 
-  const { dishes } = await gatherFacts();
+  const { dishes } = await gatherFacts(today);
   if (dishes.length === 0) {
     return { error: "There are no dishes to choose between yet." };
   }
@@ -169,7 +158,7 @@ export async function closeRound(roundId: string): Promise<RoundOutcome> {
     supabase.from("round_dishes").select("dish_id").eq("round_id", roundId),
     supabase.from("votes").select("user_id, dish_id, choice").eq("round_id", roundId),
     supabase.from("member_karma").select("user_id, value, last_decay_on"),
-    gatherFacts(),
+    gatherFacts(today),
   ]);
 
   const votes: Vote[] = (tally.data ?? []).map((vote) => ({
@@ -196,7 +185,7 @@ export async function closeRound(roundId: string): Promise<RoundOutcome> {
       id: entry.dish_id,
       lastCookedOn: facts.lastCookedOn.get(entry.dish_id) ?? null,
     })),
-    ratings: facts.ratings,
+    tastes: facts.tastes,
     votes,
     karma: karma.map((entry) => ({ memberId: entry.memberId, value: entry.value })),
   });

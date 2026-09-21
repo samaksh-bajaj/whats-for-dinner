@@ -7,11 +7,20 @@ import {
   jitterFor,
   recencyPenalty,
   scoreRound,
-  type Rating,
   type ScoreRoundInput,
 } from "./score";
+import type { Taste } from "./taste";
 
 const TODAY = "2026-09-20";
+
+/**
+ * A learned taste, stated directly. How the number is arrived at from a vote
+ * history is taste.test.ts's business; these tests care what the scorer does
+ * with it once it exists, so they set it by hand the way ratings used to be.
+ */
+function taste(memberId: string, dishId: string, value: number): Taste {
+  return { memberId, dishId, value, weight: 4 };
+}
 /** Tests assert the formula, not the wobble; jitter gets its own tests. */
 const noJitter = { jitter: () => 0 };
 
@@ -46,16 +55,16 @@ describe("recency", () => {
 
 describe("a hand-computed evening", () => {
   // Three people, three dishes, every number worked out by hand below.
-  const ratings: Rating[] = [
-    { memberId: "ada", dishId: "rajma", value: 2 },
-    { memberId: "ada", dishId: "khichdi", value: 0 },
-    { memberId: "ada", dishId: "pasta", value: -1 },
-    { memberId: "bo", dishId: "rajma", value: 1 },
-    { memberId: "bo", dishId: "khichdi", value: 2 },
-    { memberId: "bo", dishId: "pasta", value: 0 },
-    { memberId: "kim", dishId: "rajma", value: -2 },
-    { memberId: "kim", dishId: "khichdi", value: 1 },
-    // kim never rated pasta: baseline 0.
+  const tastes: Taste[] = [
+    taste("ada", "rajma", 2),
+    taste("ada", "khichdi", 0),
+    taste("ada", "pasta", -1),
+    taste("bo", "rajma", 1),
+    taste("bo", "khichdi", 2),
+    taste("bo", "pasta", 0),
+    taste("kim", "rajma", -2),
+    taste("kim", "khichdi", 1),
+    // kim has never voted on pasta, so there is nothing learned: taste 0.
   ];
 
   const votes: Vote[] = [
@@ -78,7 +87,7 @@ describe("a hand-computed evening", () => {
       { id: "khichdi", lastCookedOn: null },
       { id: "pasta", lastCookedOn: daysAgo(15) },
     ],
-    ratings,
+    tastes,
     votes,
     karma: [
       { memberId: "ada", value: 0 },
@@ -109,8 +118,9 @@ describe("a hand-computed evening", () => {
     expect(by("khichdi").score).toBeCloseTo(2 * 0 + 7 / 3 + 0.25, 10);
   });
 
-  it("scores pasta at -9.3333, with kim's missing rating counting as 0", () => {
-    // ada -1-3=-4, bo 0, kim 0 (unrated) -> min -4, mean -4/3, 15 days rested.
+  it("scores pasta at -9.3333, with kim's absent taste counting as 0", () => {
+    // ada -1-3=-4, bo 0, kim 0 (never voted on it) -> min -4, mean -4/3,
+    // 15 days rested.
     expect(by("pasta").min).toBe(-4);
     expect(by("pasta").mean).toBeCloseTo(-4 / 3, 10);
     expect(by("pasta").recency).toBe(0);
@@ -154,7 +164,7 @@ describe("the awkward evenings", () => {
 
   it("refuses to pick a winner when nobody voted", () => {
     const result = scoreRound(
-      { roundId: "r", today: TODAY, dishes, ratings: [], votes: [], karma: [] },
+      { roundId: "r", today: TODAY, dishes, tastes: [], votes: [], karma: [] },
       noJitter,
     );
     expect(result.winnerDishId).toBeNull();
@@ -173,11 +183,11 @@ describe("the awkward evenings", () => {
         roundId: "r",
         today: TODAY,
         dishes,
-        ratings: [
-          { memberId: "ada", dishId: "a", value: 1 },
-          { memberId: "bo", dishId: "a", value: 0 },
-          { memberId: "ada", dishId: "b", value: -2 },
-          { memberId: "bo", dishId: "b", value: -1 },
+        tastes: [
+          taste("ada", "a", 1),
+          taste("bo", "a", 0),
+          taste("ada", "b", -2),
+          taste("bo", "b", -1),
         ],
         votes,
         karma: [],
@@ -195,10 +205,10 @@ describe("the awkward evenings", () => {
         roundId: "r",
         today: TODAY,
         dishes,
-        ratings: [
-          { memberId: "ada", dishId: "a", value: 2 },
+        tastes: [
+          taste("ada", "a", 2),
           // bo hates it, but bo never voted, so bo is not in the room.
-          { memberId: "bo", dishId: "a", value: -2 },
+          taste("bo", "a", -2),
         ],
         votes: [{ memberId: "ada", dishId: "a", choice: "yum" }],
         karma: [],
@@ -219,7 +229,7 @@ describe("the awkward evenings", () => {
         roundId: "r",
         today: TODAY,
         dishes,
-        ratings: [],
+        tastes: [],
         votes: [
           { memberId: "ada", dishId: "a", choice: "yum" },
           { memberId: "bo", dishId: "a", choice: "meh" },
@@ -243,7 +253,7 @@ describe("ties", () => {
       { id: "older", lastCookedOn: "2026-09-01" },
       { id: "newer", lastCookedOn: "2026-09-02" },
     ],
-    ratings: [],
+    tastes: [],
     votes: [
       { memberId: "ada", dishId: "older", choice: "meh" },
       { memberId: "ada", dishId: "newer", choice: "meh" },
@@ -266,11 +276,11 @@ describe("ties", () => {
           { id: "even", lastCookedOn: "2026-09-01" },
           { id: "divisive", lastCookedOn: "2026-09-01" },
         ],
-        ratings: [
-          { memberId: "ada", dishId: "divisive", value: 2 },
-          { memberId: "bo", dishId: "divisive", value: -2 },
-          { memberId: "ada", dishId: "even", value: 0 },
-          { memberId: "bo", dishId: "even", value: 0 },
+        tastes: [
+          taste("ada", "divisive", 2),
+          taste("bo", "divisive", -2),
+          taste("ada", "even", 0),
+          taste("bo", "even", 0),
         ],
         votes: [
           { memberId: "ada", dishId: "even", choice: "meh" },
@@ -366,7 +376,7 @@ describe("sampling", () => {
   const plain = (id: string, overrides: Partial<SampleDish> = {}): SampleDish => ({
     id,
     lastCookedOn: null,
-    baseline: 0,
+    taste: 0,
     lifetimeVotes: 0,
     ...overrides,
   });
@@ -377,7 +387,7 @@ describe("sampling", () => {
 
     expect(picked).toHaveLength(SAMPLE_SIZE);
     expect(new Set(picked.map((dish) => dish.dishId)).size).toBe(SAMPLE_SIZE);
-    expect(picked.filter((dish) => dish.slot === "high_baseline")).toHaveLength(3);
+    expect(picked.filter((dish) => dish.slot === "favourite")).toHaveLength(3);
     expect(picked.filter((dish) => dish.slot === "exploration")).toHaveLength(2);
     expect(picked.filter((dish) => dish.slot === "wildcard")).toHaveLength(1);
   });
@@ -400,19 +410,19 @@ describe("sampling", () => {
     expect(new Set(picked.map((dish) => dish.dishId)).size).toBe(SAMPLE_SIZE);
   });
 
-  it("fills the liked slots with the best-rated things that have rested", () => {
+  it("fills the liked slots with the best-liked things that have rested", () => {
     const dishes = [
-      plain("adored-but-yesterday", { baseline: 2, lastCookedOn: daysAgo(1) }),
-      plain("liked-and-rested-1", { baseline: 1.5 }),
-      plain("liked-and-rested-2", { baseline: 1.4 }),
-      plain("liked-and-rested-3", { baseline: 1.3 }),
-      plain("dull-1", { baseline: -1 }),
-      plain("dull-2", { baseline: -1 }),
-      plain("dull-3", { baseline: -1 }),
+      plain("adored-but-yesterday", { taste: 2, lastCookedOn: daysAgo(1) }),
+      plain("liked-and-rested-1", { taste: 1.5 }),
+      plain("liked-and-rested-2", { taste: 1.4 }),
+      plain("liked-and-rested-3", { taste: 1.3 }),
+      plain("dull-1", { taste: -1 }),
+      plain("dull-2", { taste: -1 }),
+      plain("dull-3", { taste: -1 }),
     ];
     const picked = sampleDishes({ roundId: "r", today: TODAY, dishes });
     const liked = picked
-      .filter((dish) => dish.slot === "high_baseline")
+      .filter((dish) => dish.slot === "favourite")
       .map((dish) => dish.dishId);
 
     expect(liked).toEqual([
@@ -424,12 +434,12 @@ describe("sampling", () => {
 
   it("spends the exploration slots on whatever nobody has voted on", () => {
     const dishes = [
-      plain("famous-1", { baseline: 2, lifetimeVotes: 40 }),
-      plain("famous-2", { baseline: 2, lifetimeVotes: 38 }),
-      plain("famous-3", { baseline: 2, lifetimeVotes: 36 }),
-      plain("famous-4", { baseline: 1, lifetimeVotes: 30 }),
-      plain("unknown-1", { baseline: 0, lifetimeVotes: 0 }),
-      plain("unknown-2", { baseline: 0, lifetimeVotes: 1 }),
+      plain("famous-1", { taste: 2, lifetimeVotes: 40 }),
+      plain("famous-2", { taste: 2, lifetimeVotes: 38 }),
+      plain("famous-3", { taste: 2, lifetimeVotes: 36 }),
+      plain("famous-4", { taste: 1, lifetimeVotes: 30 }),
+      plain("unknown-1", { taste: 0, lifetimeVotes: 0 }),
+      plain("unknown-2", { taste: 0, lifetimeVotes: 1 }),
     ];
     const picked = sampleDishes({ roundId: "r", today: TODAY, dishes });
     const explored = picked

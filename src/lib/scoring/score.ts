@@ -3,16 +3,16 @@ import {
   KARMA_TERM_WEIGHT,
   MIN_WEIGHT,
   RECENCY_BANDS,
+  NO_TASTE,
   RECENCY_PENALTY_BEYOND,
-  UNRATED_BASELINE,
   VOTE_VALUES,
   type VoteChoice,
 } from "./config";
 import { daysSince } from "./dates";
 import { seededUnit } from "./random";
 import type { Vote } from "./karma";
+import type { Taste } from "./taste";
 
-export type Rating = { memberId: string; dishId: string; value: number };
 export type DishFacts = { id: string; lastCookedOn: string | null };
 
 export type ScoreRoundInput = {
@@ -21,7 +21,8 @@ export type ScoreRoundInput = {
   today: string;
   /** The six frozen at round start. */
   dishes: readonly DishFacts[];
-  ratings: readonly Rating[];
+  /** What each member has learned to think of each dish, from past rounds. */
+  tastes: readonly Taste[];
   votes: readonly Vote[];
   /** Already decayed to `today`. */
   karma: readonly { memberId: string; value: number }[];
@@ -58,8 +59,8 @@ export function recencyPenalty(lastCookedOn: string | null, today: string) {
 }
 
 /** Tonight's feeling on top of the lasting one. */
-export function memberScore(baseline: number, choice: VoteChoice) {
-  return baseline + VOTE_VALUES[choice];
+export function memberScore(taste: number, choice: VoteChoice) {
+  return taste + VOTE_VALUES[choice];
 }
 
 /** Deterministic on (round, dish): scoring twice cannot change the winner. */
@@ -78,8 +79,8 @@ export function scoreRound(
   const voters = [...new Set(input.votes.map((vote) => vote.memberId))];
   if (voters.length === 0) return { ranked: [], winnerDishId: null, reason: "no-votes" };
 
-  const baseline = new Map(
-    input.ratings.map((rating) => [`${rating.memberId}:${rating.dishId}`, rating.value]),
+  const tasteOf = new Map(
+    input.tastes.map((taste) => [`${taste.memberId}:${taste.dishId}`, taste.value]),
   );
   const voteFor = new Map(
     input.votes.map((vote) => [`${vote.memberId}:${vote.dishId}`, vote.choice]),
@@ -94,8 +95,8 @@ export function scoreRound(
       // as indifferent — the UI does not allow it, but the maths should not
       // invent an opinion either way.
       if (!choice) continue;
-      const rated = baseline.get(`${memberId}:${dish.id}`) ?? UNRATED_BASELINE;
-      memberScores.push({ memberId, value: memberScore(rated, choice) });
+      const taste = tasteOf.get(`${memberId}:${dish.id}`) ?? NO_TASTE;
+      memberScores.push({ memberId, value: memberScore(taste, choice) });
     }
 
     const values = memberScores.map((entry) => entry.value);

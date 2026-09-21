@@ -1,7 +1,7 @@
 # What's for Dinner?
 
 A mobile-first web app that settles a household's nightly dinner decision.
-Everyone rates the household's dish list once. Any member starts the evening's
+Nobody fills in a preference form. Any member starts the evening's
 round; six sampled dishes go up; everyone votes; any member ends it. A scoring
 formula that weights the least-happy member heavily — plus karma that gives
 ground to people who keep losing — picks the winner. Cooked dishes log to a
@@ -26,17 +26,18 @@ query silently hides the earlier ones.
 
 ```
 src/lib/scoring/config.ts     every tunable constant, and nowhere else
-src/lib/scoring/*.ts          sample, score, karma, dates, random — pure, tested
+src/lib/scoring/*.ts          sample, score, taste, karma, dates, random — pure
 src/lib/rounds.ts             startRound / closeRound
 src/lib/history.ts            calendar, karma board, dish stats
-src/lib/dishes.ts             the repertoire and the rating gate
+src/lib/dishes.ts             the repertoire
+src/lib/taste.ts              the vote history that preference is learned from
 src/lib/household.ts          getViewer / requireHousehold / requireNoHousehold
 src/lib/*-actions.ts          server actions, one file per area
 src/lib/supabase/             browser + server clients, realtime auth, types
 src/proxy.ts                  session refresh (Next 16's rename of middleware)
 src/app/(app)/                the four tabs, behind a household check
-src/app/(onboarding)/         welcome / create / join, and the rating gate
-supabase/migrations/          one migration, mirrored from MCP
+src/app/(onboarding)/         welcome / create / join
+supabase/migrations/          mirrored from MCP
 ```
 
 Route groups do the gating, not the proxy: `(app)` sends anyone without a
@@ -52,12 +53,19 @@ business making a database round-trip on every request.
 - **Joining** takes a 6-character code plus a household password.
 - **Any member** can add a dish; only its creator or the leader can edit or
   archive it.
-- **Rating is a hard gate** — a member cannot vote while any active dish is
-  unrated, including a dish someone added today.
+- **Nothing gates voting.** There is no rating step and no `dish_ratings`
+  table: preference is learned from the votes people already cast each evening.
+  Someone who joined an hour ago votes tonight, and a household with fifty
+  dishes is no harder to join than one with six. This was the point of removing
+  rating — do not reintroduce a form that has to be filled in before playing.
 - **Rounds are manual.** Any member starts tonight's round, any member ends it.
   There is no 4 PM cutoff, no timer, no cron job, and no `closes_at` column.
   Whoever hasn't voted when a round ends is simply excluded from scoring.
 - **Results show the winning dish and nothing else** — no score breakdown.
+- **Aggregate taste is never shown.** A member sees their own taste on
+  `/dishes`, and nowhere does the UI publish what the household collectively
+  thinks of a dish. It is an input to the formula, not a scoreboard; showing it
+  invites people to vote against the number instead of saying what they want.
 - Refuse to end a round with zero votes; nudge someone to vote first.
 
 ## Scoring
@@ -68,10 +76,18 @@ exists in two languages.
 
 ```
 PER-MEMBER SCORE (voters only)
-  m = baseline_rating(-2..+2) + tonight_vote
+  m = taste(-2..+2, learned) + tonight_vote
   tonight: Yum +2 | Meh 0 | Yuck -3
-  unrated dish -> baseline 0
+  never voted on it -> taste 0, so a new member is neither helped nor punished
   a voter who skipped one dish abstains on it; no opinion is invented
+
+TASTE (per member per dish, learned from closed rounds only)
+  taste = sum(w*v) / (sum(w) + 2)      w = 0.99^days, v = Yum +2|Meh 0|Yuck -2
+  the shrinkage (+2) is what makes one yum worth 0.67 and not 2
+  |taste| < 2 falls out of the algebra; no clamp needed
+  Yuck is -2 here and -3 above on purpose: the extra point is tonight's veto,
+  not a lasting opinion, and dropping it keeps m in [-5, +4]
+  tonight's open round is excluded, or one tap would count twice
 
 DISH SCORE
   2*min(m) + mean(m) - recency + karma + jitter
@@ -95,10 +111,15 @@ tiebreak are both seeded on `(round, dish)`, so scoring the same round twice
 cannot produce two different winners. Otherwise "End voting" would be a coin
 flip anyone could re-roll by refreshing.
 
-**Sampling**, 6 dishes frozen at round start: 3 highest household baseline not
+**Sampling**, 6 dishes frozen at round start: 3 highest household taste not
 cooked in 7 days, 2 with the fewest lifetime votes, 1 wildcard not cooked in 15
 days. If a slot can't be filled, relax its window (7→3→0, 15→7→0) then draw at
 random. Under 6 active dishes, show them all — this is the day-one path.
+
+On day one every taste is 0, so the favourite slot falls through to fewest
+lifetime votes and then the seeded coin. That is how a household bootstraps: the
+exploration slots keep putting unfamiliar dishes up, and voting on them is what
+teaches the app anyone's taste in the first place. Nothing else feeds it.
 
 ## Conventions
 
@@ -146,13 +167,13 @@ random. Under 6 active dishes, show them all — this is the day-one path.
 
 ## Testing
 
-- `npm test` — vitest over the scoring module and the calendar maths (35 tests).
+- `npm test` — vitest over the scoring module and the calendar maths (47 tests).
 - `npm run lint` — **run it before committing.** It catches React hooks rules
   that `npm run build` does not.
 - `npm run build` — type-checks as well as compiles.
 - For anything involving two people, create a stand-in member with SQL through
   the MCP server (insert into `auth.users`, then `household_members`,
-  `member_karma`, `dish_ratings`) and drive the other side from the browser.
+  `member_karma`) and drive the other side from the browser.
   Delete the stand-in afterwards; the cascade cleans up.
 - Driving Chrome: click by element `ref` from `read_page`. Coordinate clicks
   frequently miss on the first attempt after a navigation. Chrome also throttles
@@ -181,16 +202,20 @@ and the proxy gating `/tonight`, `/dishes`, `/household` and `/calendar` to
 ## State of the data
 
 Still the testing phase. As of 2026-09-21 the Supabase project holds one
-household with three accounts in it, nine dishes and two rounds — all of it the
-owner's own test accounts, not other people's dinners. Wiping and reseeding is
-fair game while that stays true, and the owner has asked for a clean slate
-before.
+household with three accounts in it, nine dishes (eight active) and two rounds
+carrying 18 votes — all of it the owner's own test accounts, not other people's
+dinners. Wiping and reseeding is fair game while that stays true, and the owner
+has asked for a clean slate before.
+
+Those 18 votes are now the *only* record of who likes what: with `dish_ratings`
+gone, deleting a closed round deletes the taste it taught. The 2026-09-21 round
+was deleted and re-run once, on purpose, to exercise the new scoring path.
 
 It will stop being true. Once real housemates are in, fixture rounds and
-stand-in members stop being harmless: that history feeds recency, sampling and
-karma, so fake rows would skew real dinners. At that point use a Supabase
-branch through the MCP server (`create_branch`) for anything needing a second
-person or backfilled history, and update this section.
+stand-in members stop being harmless: that history feeds recency, sampling,
+karma and now taste itself, so fake rows would skew real dinners. At that point
+use a Supabase branch through the MCP server (`create_branch`) for anything
+needing a second person or backfilled history, and update this section.
 
 ## Open decisions
 

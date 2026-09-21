@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Archive, ArrowLeft } from "lucide-react";
-import { RatingScale } from "@/components/rating-scale";
+import { TasteBadge } from "@/components/taste-badge";
 import { Button } from "@/components/ui/button";
 import { archiveDish } from "@/lib/dish-actions";
 import { requireHousehold } from "@/lib/household";
+import { householdToday } from "@/lib/rounds";
+import { myTaste } from "@/lib/taste";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { EditDishForm } from "./edit-dish-form";
 
@@ -23,12 +25,7 @@ export default async function DishPage(props: PageProps<"/dishes/[id]">) {
   // which is exactly what we want to show.
   if (!dish) notFound();
 
-  const { data: rating } = await supabase
-    .from("dish_ratings")
-    .select("value")
-    .eq("dish_id", id)
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const tastes = await myTaste(user.id, householdToday(household));
 
   const { data: cooks } = await supabase
     .from("profiles")
@@ -62,11 +59,15 @@ export default async function DishPage(props: PageProps<"/dishes/[id]">) {
 
       <section className="mt-8">
         <h2 className="text-[13px] font-medium tracking-wide text-ink-faint uppercase">
-          Your rating
+          Your taste
         </h2>
         <div className="mt-3">
-          <RatingScale dishId={dish.id} current={rating?.value} />
+          <TasteBadge taste={tastes.get(dish.id)} />
         </div>
+        <p className="mt-2 text-[13px] leading-relaxed text-ink-faint">
+          Worked out from how you have voted on it, and nothing to fill in. The
+          dots are how much voting that rests on.
+        </p>
       </section>
 
       {canEdit && (

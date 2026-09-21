@@ -2,11 +2,13 @@
 
 A mobile-first web app that settles a household's nightly dinner decision.
 
-Everyone rates the household's dish list once. Any member starts the evening's
-round; six sampled dishes go up; everyone votes; any member ends it. A scoring
-formula that weights the least-happy member heavily — plus karma that gives
-ground to people who keep losing — picks the winner. Cooked dishes log to a
-calendar and feed back into recency and sampling.
+Nobody fills in a preference form. Any member starts the evening's round; six
+sampled dishes go up; everyone votes; any member ends it. A scoring formula
+that weights the least-happy member heavily — plus karma that gives ground to
+people who keep losing — picks the winner. Voting is also how the app learns
+what each person thinks of each dish, so a new housemate joins and votes the
+same evening. Cooked dishes log to a calendar and feed back into recency and
+sampling.
 
 **Stack:** Next.js 16 (App Router, TypeScript) · Supabase (Postgres, Auth, RLS,
 Realtime) · Tailwind v4 · lucide-react · deployed on Vercel at
@@ -51,7 +53,7 @@ src/lib/rounds.ts         startRound / closeRound
 src/lib/history.ts        calendar, karma board, dish stats
 src/proxy.ts              session refresh (Next 16 renamed Middleware to Proxy)
 src/app/(app)/            the four tabs, behind a household check
-src/app/(onboarding)/     create / join a household, and the rating gate
+src/app/(onboarding)/     create / join a household
 supabase/migrations/      the schema, mirrored from the Supabase MCP server
 ```
 

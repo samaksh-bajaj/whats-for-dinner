@@ -4,15 +4,32 @@
  * this is the only file to argue about.
  */
 
-/** What tonight's vote is worth, on top of the lasting baseline rating. */
+/** What tonight's vote is worth, on top of the lasting taste. */
 export const VOTE_VALUES = { yum: 2, meh: 0, yuck: -3 } as const;
 
 export type VoteChoice = keyof typeof VOTE_VALUES;
 
-/** Ratings run Angry -2 .. Laugh +2; a dish you never rated counts as 0. */
-export const RATING_MIN = -2;
-export const RATING_MAX = 2;
-export const UNRATED_BASELINE = 0;
+/**
+ * The same vote, read as a lasting opinion rather than tonight's mood. Yuck is
+ * -2 here and -3 above on purpose: the extra point is a veto that belongs to
+ * the evening, while what you generally think of a dish sits on the symmetric
+ * -2..+2 scale. That is what keeps a member's score inside [-5, +4].
+ */
+export const TASTE_VALUES = { yum: 2, meh: 0, yuck: -2 } as const;
+
+/** 0.99^69 = 0.5, so an opinion is worth half as much after ten weeks. */
+export const TASTE_DECAY_PER_DAY = 0.99;
+
+/**
+ * Shrinkage, in imaginary observations sitting at zero. It is what makes one
+ * night's vote a hint rather than a verdict: a single yum learns +0.67, not
+ * +2, and only repeated agreement climbs. It also means someone who has never
+ * voted on a dish contributes nothing at all instead of being guessed at.
+ */
+export const TASTE_SHRINKAGE = 2;
+
+/** A dish you have never voted on. The algebra keeps |taste| < 2 either way. */
+export const NO_TASTE = 0;
 
 /**
  * How hard the least-happy member pulls. At 2, one person's "yuck" outweighs
@@ -49,7 +66,7 @@ export const JITTER = 0.15;
 /** Six dishes a night, frozen when the round starts. */
 export const SAMPLE_SIZE = 6;
 
-export type SlotType = "high_baseline" | "exploration" | "wildcard";
+export type SlotType = "favourite" | "exploration" | "wildcard";
 
 /**
  * Filled in order. `windows` are the "not cooked in the last N days" rules,
@@ -61,7 +78,7 @@ export const SLOT_PLAN: ReadonlyArray<{
   count: number;
   windows: readonly number[];
 }> = [
-  { slot: "high_baseline", count: 3, windows: [7, 3, 0] },
+  { slot: "favourite", count: 3, windows: [7, 3, 0] },
   { slot: "exploration", count: 2, windows: [0] },
   { slot: "wildcard", count: 1, windows: [15, 7, 0] },
 ];
